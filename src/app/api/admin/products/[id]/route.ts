@@ -25,102 +25,54 @@ export async function PUT(
   try {
     const body = await request.json();
     const validatedData = productSchema.parse(body);
-
     const productId = params.id;
 
     // Fetch existing product and its features
     const existingProduct = await prisma.smartwatch.findUnique({
-      where: {
-        id: productId,
+      where: { id: productId },
+      include: { features: true },
+    });
+
+    if (!existingProduct) {
+      return NextResponse.json(
+        { error: 'Produto não encontrado' },
+        { status: 404 }
+      );
+    }
+
+    // Update product
+    const updatedProduct = await prisma.smartwatch.update({
+      where: { id: productId },
+      data: {
+        name: validatedData.name,
+        brand: validatedData.brand,
+        description: validatedData.description,
+        price: validatedData.price,
+        imageUrl: validatedData.imageUrl,
+        stock: validatedData.stock,
+        features: {
+          deleteMany: {},
+          create: validatedData.features.map((feature) => ({
+            name: feature.name,
+          })),
+        },
       },
       include: {
         features: true,
       },
     });
 
-    if (!existingProduct) {
-      return NextResponse.json({ message: 'Product not found' }, { status: 404 });
-    }
-
-    // Determine features to create, update, and delete
-    const existingFeatures = existingProduct.features;
-    const updatedFeatures = validatedData.features;
-
-    const featuresToCreate = updatedFeatures.filter(feature => !feature.id);
-
-    const featuresToUpdate = updatedFeatures.filter((feature: { id?: string; name: string }) =>
-      feature.id && existingFeatures.some((ef: { id: string; name: string }) => ef.id === feature.id)
-    );
-
-    const featureIdsToDelete = existingFeatures
-      .filter((existingFeature: { id: string; name: string }) => !updatedFeatures.some(uf => uf.id === existingFeature.id))
-      .map((feature: { id: string }) => feature.id);
-
-    // Perform updates in a transaction
-    const updatedProduct = await prisma.$transaction(async (tx) => {
-      // Delete features
-      if (featureIdsToDelete.length > 0) {
-        await tx.feature.deleteMany({
-          where: {
-            id: { in: featureIdsToDelete },
-          },
-        });
-      }
-
-      // Create new features
-      if (featuresToCreate.length > 0) {
-        await tx.feature.createMany({
-          data: featuresToCreate.map(feature => ({
-            name: feature.name,
-            smartwatchId: productId,
-          })),
-        });
-      }
-
-      // Update existing features
-      for (const feature of featuresToUpdate) {
-        await tx.feature.update({
-          where: {
-            id: feature.id as string, // We know ID exists here
-          },
-          data: {
-            name: feature.name,
-          },
-        });
-      }
-
-      // Update product details
-      return tx.smartwatch.update({
-        where: {
-          id: productId,
-        },
-        data: {
-          name: validatedData.name,
-          brand: validatedData.brand,
-          price: validatedData.price,
-          description: validatedData.description,
-          imageUrl: validatedData.imageUrl,
-          isPublished: validatedData.isPublished,
-          stock: validatedData.stock,
-          criticalStock: validatedData.criticalStock,
-        },
-        include: {
-          features: true,
-        },
-      });
-    });
-
     return NextResponse.json(updatedProduct);
   } catch (error) {
+    console.error('Error updating product:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { message: 'Dados inválidos', errors: error.errors },
+        { error: 'Dados inválidos', details: error.errors },
         { status: 400 }
       );
     }
-    console.error('Error updating product:', error);
     return NextResponse.json(
-      { message: 'Erro ao atualizar produto' },
+      { error: 'Erro ao atualizar produto' },
       { status: 500 }
     );
   }

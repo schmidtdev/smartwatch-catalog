@@ -33,14 +33,14 @@ interface CheckoutFormData {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, getTotalPrice, clearCart } = useCartStore();
+  const { items, totalPrice, clearCart } = useCartStore();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shippingCost, setShippingCost] = useState(0.0);
 
   // Lógica para calcular o frete
   useEffect(() => {
-    const orderTotal = getTotalPrice();
+    const orderTotal = totalPrice;
     // Regra placeholder: frete grátis acima de R$ 500,00
     if (orderTotal >= 500.00) {
       setShippingCost(0.00);
@@ -49,7 +49,7 @@ export default function CheckoutPage() {
     } else {
       setShippingCost(0.00); // Frete 0 se o carrinho estiver vazio
     }
-  }, [items, getTotalPrice]); // Recalcula quando os itens do carrinho ou o total mudam
+  }, [items, totalPrice]); // Recalcula quando os itens do carrinho ou o total mudam
 
   const {
     register,
@@ -76,7 +76,7 @@ export default function CheckoutPage() {
             quantity: item.quantity,
             price: item.price,
           })),
-          totalAmount: getTotalPrice(),
+          totalAmount: totalPrice,
           shippingCost: shippingCost,
           // grandTotal will be calculated by the backend
         }),
@@ -115,7 +115,7 @@ export default function CheckoutPage() {
     );
   }
 
-  const orderTotal = getTotalPrice();
+  const orderTotal = totalPrice;
   const grandTotal = orderTotal + shippingCost;
 
   return (

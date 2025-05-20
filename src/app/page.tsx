@@ -26,17 +26,13 @@ interface Smartwatch {
 
 export default function Home() {
   const [smartwatches, setSmartwatches] = useState<Smartwatch[]>([]);
+  const [filteredSmartwatches, setFilteredSmartwatches] = useState<Smartwatch[]>([]);
+  const [loading, setLoading] = useState(true);
   const [brands, setBrands] = useState<string[]>([]);
   const [features, setFeatures] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ brand: "", minPrice: "", maxPrice: "", feature: "" });
+  const { addToCart, totalItems: totalItemsInCart, totalPrice: cartTotalPrice, updateItemQuantity, items: cartItems } = useCartStore();
 
-  const { items: cartItems, addItem, getTotalPrice, getItemCount, updateItemQuantity } = useCartStore();
-
-  const totalItemsInCart = getItemCount();
-  const cartTotalPrice = getTotalPrice();
-
-  const [isCartOpen, setIsCartOpen] = useState(true);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   const toggleCart = () => {
     setIsCartOpen(!isCartOpen);
@@ -53,56 +49,79 @@ export default function Home() {
     useCartStore.getState().removeItem(itemId);
   };
 
-  async function fetchSmartwatches(params = {}) {
-    setLoading(true);
+  const fetchSmartwatches = async () => {
     try {
-      const url = new URL("/api/smartwatches", window.location.origin);
-      Object.entries(params).forEach(([k, v]) => {
-        if (v) url.searchParams.set(k, v as string);
-      });
-      const res = await fetch(url.toString());
-      if (!res.ok) {
-        throw new Error(`Erro na API: ${res.status}`);
+      const response = await fetch('/api/admin/products');
+      if (!response.ok) {
+        throw new Error('Failed to fetch smartwatches');
       }
-      console.log('Status da resposta da API:', res.status);
-      const textData = await res.text();
-      console.log('Texto bruto da resposta da API:', textData);
-      const data: Smartwatch[] = JSON.parse(textData);
-
+      const data = await response.json();
       setSmartwatches(data);
-
-      const uniqueBrands = [...new Set(data.map((s: Smartwatch) => s.brand))] as string[];
+      setFilteredSmartwatches(data);
+      
+      // Extract unique brands and features
+      const uniqueBrands = [...new Set(data.map((sw: Smartwatch) => sw.brand))] as string[];
+      const uniqueFeatures = [...new Set(data.flatMap((sw: Smartwatch) => sw.features.map(f => f.name)))] as string[];
+      
       setBrands(uniqueBrands);
-      const uniqueFeatures = [
-        ...new Set(data.flatMap((s: Smartwatch) => s.features?.map((f) => f.name) || []))
-      ] as string[];
       setFeatures(uniqueFeatures);
-
     } catch (error) {
-      console.error('Erro ao buscar smartwatches:', error);
-      setSmartwatches([]);
-      setBrands([]);
-      setFeatures([]);
+      console.error('Error fetching smartwatches:', error);
     } finally {
       setLoading(false);
     }
-  }
+  };
+
+  const handleFilter = (filters: {
+    brand: string;
+    minPrice: string;
+    maxPrice: string;
+    feature: string;
+    searchTerm: string;
+  }) => {
+    let filtered = [...smartwatches];
+
+    // Apply search filter
+    if (filters.searchTerm) {
+      const searchTerm = filters.searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        sw =>
+          sw.name.toLowerCase().includes(searchTerm) ||
+          sw.description.toLowerCase().includes(searchTerm) ||
+          sw.brand.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    // Apply brand filter
+    if (filters.brand) {
+      filtered = filtered.filter(sw => sw.brand === filters.brand);
+    }
+
+    // Apply price filters
+    if (filters.minPrice) {
+      filtered = filtered.filter(sw => sw.price >= parseFloat(filters.minPrice));
+    }
+    if (filters.maxPrice) {
+      filtered = filtered.filter(sw => sw.price <= parseFloat(filters.maxPrice));
+    }
+
+    // Apply feature filter
+    if (filters.feature) {
+      filtered = filtered.filter(sw =>
+        sw.features.some(f => f.name === filters.feature)
+      );
+    }
+
+    setFilteredSmartwatches(filtered);
+  };
+
+  const handleAddToCart = (smartwatch: Smartwatch) => {
+    addToCart(smartwatch);
+  };
 
   useEffect(() => {
-    fetchSmartwatches(filters);
-    // eslint-disable-next-line
-  }, [filters]);
-
-  function handleFilter(newFilters: typeof filters) {
-    setFilters(newFilters);
-  }
-
-  const handleAddToCart = async (item: Smartwatch) => {
-    const success = await addItem(item);
-    if (!success) {
-      toast.warn(`Não foi possível adicionar \'${item.name}\' ao carrinho. Estoque máximo atingido.`);
-    }
-  };
+    fetchSmartwatches();
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
@@ -133,7 +152,7 @@ export default function Home() {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
           ) : (
-            <SmartwatchList smartwatches={smartwatches} onAddToCart={handleAddToCart} />
+            <SmartwatchList smartwatches={filteredSmartwatches} onAddToCart={handleAddToCart} />
           )}
         </div>
       </div>

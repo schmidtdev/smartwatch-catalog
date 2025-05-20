@@ -21,21 +21,21 @@ export default function Table<T>({
 }: TableProps<T>) {
   return (
     <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-      <table className="min-w-full divide-y divide-gray-300">
+      <table className="w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
             {headers.map((header) => (
               <th
                 key={header.key}
                 scope="col"
-                className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
               >
                 {header.label}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200 bg-white">
+        <tbody className="bg-white divide-y divide-gray-200">
           {data.length === 0 ? (
             <tr>
               <td
@@ -46,14 +46,14 @@ export default function Table<T>({
               </td>
             </tr>
           ) : (
-            data.map((item, index) => (
-              <tr key={index}>
+            data.map((row, rowIndex) => (
+              <tr key={rowIndex}>
                 {headers.map((header) => (
                   <td
-                    key={header.key}
-                    className="whitespace-nowrap px-3 py-4 text-sm text-gray-500"
+                    key={`${rowIndex}-${header.key}`}
+                    className="px-4 py-4 whitespace-nowrap text-sm text-gray-900"
                   >
-                    {item[header.key as keyof T] as ReactNode}
+                    {row[header.key as keyof T] as ReactNode}
                   </td>
                 ))}
               </tr>

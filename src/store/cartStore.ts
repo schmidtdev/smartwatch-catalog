@@ -23,12 +23,12 @@ interface CartItem extends Smartwatch {
 
 interface CartState {
   items: CartItem[];
-  addItem: (item: Smartwatch) => Promise<boolean>;
+  addToCart: (item: Smartwatch) => void;
   removeItem: (itemId: string) => void;
   updateItemQuantity: (itemId: string, quantity: number) => Promise<boolean>;
   clearCart: () => void;
-  getItemCount: () => number;
-  getTotalPrice: () => number;
+  totalItems: number;
+  totalPrice: number;
 }
 
 export const useCartStore = create<CartState>()(
@@ -38,75 +38,42 @@ export const useCartStore = create<CartState>()(
     devtools(
       (set, get) => ({
         items: [],
-        addItem: async (item) => {
+        addToCart: (item) => {
           const existingItem = get().items.find((i) => i.id === item.id);
-
-          // Buscar detalhes atualizados do smartwatch, incluindo estoque
-          const response = await fetch(`/api/smartwatches/${item.id}`);
-          if (!response.ok) {
-            console.error('Erro ao buscar detalhes do smartwatch para adicionar ao carrinho', item.id);
-            return false;
-          }
-          const productDetails: Smartwatch = await response.json();
-
-          const currentQuantity = existingItem ? existingItem.quantity : 0;
-          const newQuantity = currentQuantity + 1;
-
-          // Validar estoque
-          if (newQuantity > productDetails.stock) {
-            console.warn(`Estoque insuficiente para adicionar mais do produto: ${productDetails.name}`);
-            return false;
-          }
-
           if (existingItem) {
             set((state) => ({
               items: state.items.map((i) =>
-                i.id === item.id ? { ...i, quantity: newQuantity, stock: productDetails.stock } : i
+                i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
               ),
             }));
           } else {
             set((state) => ({
-              items: [...state.items, { ...item, quantity: 1, stock: productDetails.stock }],
+              items: [...state.items, { ...item, quantity: 1 }],
             }));
           }
-          return true;
         },
         removeItem: (itemId) => {
           set((state) => ({ items: state.items.filter((i) => i.id !== itemId) }));
         },
         updateItemQuantity: async (itemId, quantity) => {
-          const existingItem = get().items.find((i) => i.id === itemId);
-          if (!existingItem) return false;
-
           if (quantity < 1) {
             get().removeItem(itemId);
             return true;
           }
-
-          // Buscar detalhes atualizados do smartwatch, incluindo estoque
-          const response = await fetch(`/api/smartwatches/${itemId}`);
-          if (!response.ok) {
-            console.error('Erro ao buscar detalhes do smartwatch para atualizar quantidade', itemId);
-            return false;
-          }
-          const productDetails: Smartwatch = await response.json();
-
-          // Validar estoque
-          if (quantity > productDetails.stock) {
-            console.warn(`Estoque insuficiente para definir a quantidade para ${quantity} para o produto: ${productDetails.name}`);
-            return false;
-          }
-
           set((state) => ({
             items: state.items.map((i) =>
-              i.id === itemId ? { ...i, quantity, stock: productDetails.stock } : i
+              i.id === itemId ? { ...i, quantity } : i
             ),
           }));
           return true;
         },
         clearCart: () => set({ items: [] }),
-        getItemCount: () => get().items.reduce((count, item) => count + item.quantity, 0),
-        getTotalPrice: () => get().items.reduce((total, item) => total + item.price * item.quantity, 0),
+        get totalItems() {
+          return get().items.reduce((count, item) => count + item.quantity, 0);
+        },
+        get totalPrice() {
+          return get().items.reduce((total, item) => total + item.price * item.quantity, 0);
+        },
       })
     ),
     {

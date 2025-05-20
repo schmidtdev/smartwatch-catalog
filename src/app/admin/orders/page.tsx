@@ -134,19 +134,19 @@ export default function OrdersPage() {
       <div className="mt-8">
         <Table
           headers={[
-            { key: 'id', label: 'ID' },
             { key: 'customerName', label: 'Cliente' },
             { key: 'email', label: 'Email' },
             { key: 'totalAmount', label: 'Total' },
             { key: 'status', label: 'Status' },
-            { key: 'paymentStatus', label: 'Pagamento' },
-            { key: 'paymentMethod', label: 'Método' },
+            { key: 'paymentStatus', label: 'Status Pagamento' },
+            { key: 'paymentMethod', label: 'Método de Pagamento' },
             { key: 'createdAt', label: 'Data' },
             { key: 'actions', label: 'Ações' },
           ]}
-          data={orders.map((order) => ({
+          data={orders.map(order => ({
             ...order,
             totalAmount: `R$ ${order.totalAmount.toFixed(2)}`,
+            createdAt: new Date(order.createdAt).toLocaleDateString('pt-BR'),
             status: (
               <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
                 order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
@@ -187,14 +187,15 @@ export default function OrdersPage() {
               PIX: 'PIX',
               BANK_SLIP: 'Boleto',
             }[order.paymentMethod] || order.paymentMethod,
-            createdAt: new Date(order.createdAt).toLocaleDateString('pt-BR'),
             actions: (
-              <Button
-                variant="secondary"
-                onClick={() => handleEdit(order)}
-              >
-                <PencilIcon className="h-5 w-5" />
-              </Button>
+              <div className="flex space-x-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => handleEdit(order)}
+                >
+                  <PencilIcon className="h-5 w-5" />
+                </Button>
+              </div>
             ),
           }))}
         />

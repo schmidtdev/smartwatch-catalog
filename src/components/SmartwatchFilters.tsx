@@ -11,6 +11,7 @@ interface SmartwatchFiltersProps {
     minPrice: string;
     maxPrice: string;
     feature: string;
+    searchTerm: string;
   }) => void;
 }
 
@@ -24,6 +25,7 @@ export default function SmartwatchFilters({
     minPrice: '',
     maxPrice: '',
     feature: '',
+    searchTerm: '',
   });
 
   const handleFilterChange = (
@@ -40,6 +42,24 @@ export default function SmartwatchFilters({
       <div className="flex items-center space-x-2">
         <FunnelIcon className="h-5 w-5 text-gray-400" />
         <h3 className="text-sm font-medium text-gray-900">Filtros</h3>
+      </div>
+
+      <div>
+        <label
+          htmlFor="searchTerm"
+          className="block text-sm font-medium text-gray-800"
+        >
+          Buscar
+        </label>
+        <input
+          type="text"
+          id="searchTerm"
+          name="searchTerm"
+          value={filters.searchTerm}
+          onChange={handleFilterChange}
+          placeholder="Buscar por nome ou descrição..."
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm py-2 px-3 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm text-gray-900"
+        />
       </div>
 
       <div>
@@ -149,12 +169,14 @@ export default function SmartwatchFilters({
             minPrice: '',
             maxPrice: '',
             feature: '',
+            searchTerm: '',
           });
           onFilter({
             brand: '',
             minPrice: '',
             maxPrice: '',
             feature: '',
+            searchTerm: '',
           });
         }}
         className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"

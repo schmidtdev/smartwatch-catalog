@@ -12,12 +12,14 @@ import {
   UsersIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
+  ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: HomeIcon },
   { name: 'Produtos', href: '/admin/products', icon: ShoppingBagIcon },
+  { name: 'Pedidos', href: '/admin/orders', icon: ClipboardDocumentListIcon },
   { name: 'Usuários', href: '/admin/users', icon: UsersIcon },
   { name: 'Configurações', href: '/admin/settings', icon: Cog6ToothIcon },
 ];
