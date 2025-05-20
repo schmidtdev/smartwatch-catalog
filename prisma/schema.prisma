@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Smartwatch {
+  id          String   @id @default(cuid())
+  name        String
+  brand       String
+  description String
+  price       Float
+  imageUrl    String
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  orders      OrderItem[]
+  features    Feature[]
+  stock       Int      @default(0)
+  criticalStock Int? // Optional critical stock level
+}
+
+model Feature {
+  id           String      @id @default(cuid())
+  name         String
+  smartwatch   Smartwatch  @relation(fields: [smartwatchId], references: [id])
+  smartwatchId String
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  customerName  String
+  email         String
+  phone         String
+  address       String
+  status        OrderStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
+  paymentMethod PaymentMethod
+  items         OrderItem[]
+  totalAmount   Float
+  shippingCost  Float
+  grandTotal    Float
+  trackingCode  String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model OrderItem {
+  id           String     @id @default(cuid())
+  order        Order      @relation(fields: [orderId], references: [id])
+  orderId      String
+  smartwatch   Smartwatch @relation(fields: [smartwatchId], references: [id])
+  smartwatchId String
+  quantity     Int
+  price        Float      // Preço unitário no momento da compra
+}
+
+enum OrderStatus {
+  PENDING     // Aguardando confirmação
+  CONFIRMED   // Pedido confirmado
+  PREPARING   // Em preparação
+  SHIPPED     // Enviado
+  DELIVERED   // Entregue
+  CANCELLED   // Cancelado
+}
+
+enum PaymentStatus {
+  PENDING     // Aguardando pagamento
+  PAID        // Pago
+  FAILED      // Falhou
+  REFUNDED    // Reembolsado
+}
+
+enum PaymentMethod {
+  CREDIT_CARD  // Cartão de crédito
+  DEBIT_CARD   // Cartão de débito
+  PIX          // PIX
+  BANK_SLIP   // Boleto
+}
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
+
+model AdminUser {
+  id       String @id @default(cuid())
+  email    String @unique
+  password String // Stores the hashed password
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

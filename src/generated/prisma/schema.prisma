@@ -1,0 +1,66 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Smartwatch {
+  id          String      @id @default(cuid())
+  name        String
+  brand       String
+  description String
+  price       Float
+  imageUrl    String
+  isPublished Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orders      OrderItem[]
+  features    Feature[]
+}
+
+model Feature {
+  id           String     @id @default(cuid())
+  name         String
+  smartwatch   Smartwatch @relation(fields: [smartwatchId], references: [id])
+  smartwatchId String
+}
+
+model Order {
+  id           String      @id @default(cuid())
+  customerName String
+  email        String
+  phone        String
+  address      String
+  status       OrderStatus @default(PENDING)
+  items        OrderItem[]
+  totalAmount  Float
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model OrderItem {
+  id           String     @id @default(cuid())
+  order        Order      @relation(fields: [orderId], references: [id])
+  orderId      String
+  smartwatch   Smartwatch @relation(fields: [smartwatchId], references: [id])
+  smartwatchId String
+  quantity     Int
+  price        Float
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
