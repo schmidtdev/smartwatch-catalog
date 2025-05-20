@@ -18,10 +18,8 @@ const productSchema = z.object({
   criticalStock: z.number().int().min(0, 'Estoque crítico deve ser um número inteiro não negativo').nullable().optional(),
 });
 
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const body = await request.json();
     const validatedData = productSchema.parse(body);
@@ -50,6 +48,7 @@ export async function PUT(
         price: validatedData.price,
         imageUrl: validatedData.imageUrl,
         stock: validatedData.stock,
+        isPublished: validatedData.isPublished,
         features: {
           deleteMany: {},
           create: validatedData.features.map((feature) => ({
@@ -78,10 +77,8 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const productId = params.id;
 

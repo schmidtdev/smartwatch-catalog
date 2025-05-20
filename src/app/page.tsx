@@ -30,7 +30,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [brands, setBrands] = useState<string[]>([]);
   const [features, setFeatures] = useState<string[]>([]);
-  const { addToCart, totalItems: totalItemsInCart, totalPrice: cartTotalPrice, updateItemQuantity, items: cartItems } = useCartStore();
+  const { addToCart, totalItems: totalItemsInCart, totalPrice: cartTotalPrice, updateItemQuantity, items: cartItems, clearCart } = useCartStore();
 
   const [isCartOpen, setIsCartOpen] = useState(false);
 
@@ -47,11 +47,20 @@ export default function Home() {
 
   const handleRemoveItem = (itemId: string) => {
     useCartStore.getState().removeItem(itemId);
+    if (cartItems.length === 1) {
+      setIsCartOpen(false);
+    }
+  };
+
+  const handleAddToCart = (smartwatch: Smartwatch) => {
+    addToCart(smartwatch);
+    toast.success(`${smartwatch.name} adicionado ao carrinho!`);
+    setIsCartOpen(true);
   };
 
   const fetchSmartwatches = async () => {
     try {
-      const response = await fetch('/api/admin/products');
+      const response = await fetch('/api/smartwatches');
       if (!response.ok) {
         throw new Error('Failed to fetch smartwatches');
       }
@@ -115,19 +124,28 @@ export default function Home() {
     setFilteredSmartwatches(filtered);
   };
 
-  const handleAddToCart = (smartwatch: Smartwatch) => {
-    addToCart(smartwatch);
-  };
-
   useEffect(() => {
     fetchSmartwatches();
+  }, []);
+
+  // Forçar re-render quando o carrinho mudar
+  useEffect(() => {
+    const unsubscribe = useCartStore.subscribe((state) => {
+      if (state.items.length === 0) {
+        setIsCartOpen(false);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Catálogo de Smartwatches</h1>
-        {totalItemsInCart > 0 && (
+        {cartItems.length > 0 && (
           <Link
             href="/checkout"
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -157,24 +175,24 @@ export default function Home() {
         </div>
       </div>
 
-      {totalItemsInCart > 0 && (
+      {cartItems.length > 0 && (
         <button
           onClick={toggleCart}
           className="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg z-50 transition-transform duration-300 ease-in-out transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           style={{ display: isCartOpen ? 'none' : 'flex', alignItems: 'center' }}
         >
-           <ShoppingCartIcon className="h-6 w-6" />
-           <span className="ml-2 text-sm font-medium">{totalItemsInCart}</span>
+          <ShoppingCartIcon className="h-6 w-6" />
+          <span className="ml-2 text-sm font-medium">{totalItemsInCart}</span>
         </button>
       )}
 
-      {totalItemsInCart > 0 && isCartOpen && (
+      {cartItems.length > 0 && isCartOpen && (
         <div className="fixed bottom-4 right-4 bg-white shadow-lg rounded-lg p-4 w-80 z-50 border border-gray-200 transform transition-transform ease-in-out duration-300 translate-x-0">
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-semibold text-gray-900">Carrinho de Compras</h2>
             <button onClick={toggleCart} className="text-gray-500 hover:text-gray-700">
-               <XMarkIcon className="h-5 w-5" />
-             </button>
+              <XMarkIcon className="h-5 w-5" />
+            </button>
           </div>
           <div className="max-h-48 overflow-y-auto mb-4">
             {cartItems.map((item) => (

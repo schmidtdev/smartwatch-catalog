@@ -31,6 +31,14 @@ interface CartState {
   totalPrice: number;
 }
 
+const calculateTotalItems = (items: CartItem[]): number => {
+  return items.reduce((count, item) => count + item.quantity, 0);
+};
+
+const calculateTotalPrice = (items: CartItem[]): number => {
+  return items.reduce((total, item) => total + (item.price * item.quantity), 0);
+};
+
 export const useCartStore = create<CartState>()(
   // persist middleware to save and load state from localStorage
   persist(
@@ -39,42 +47,68 @@ export const useCartStore = create<CartState>()(
       (set, get) => ({
         items: [],
         addToCart: (item) => {
-          const existingItem = get().items.find((i) => i.id === item.id);
-          if (existingItem) {
-            set((state) => ({
-              items: state.items.map((i) =>
-                i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-              ),
-            }));
+          const currentItems = get().items;
+          const existingItemIndex = currentItems.findIndex((i) => i.id === item.id);
+
+          let newItems: CartItem[];
+          if (existingItemIndex >= 0) {
+            newItems = currentItems.map((i, index) =>
+              index === existingItemIndex ? { ...i, quantity: i.quantity + 1 } : i
+            );
           } else {
-            set((state) => ({
-              items: [...state.items, { ...item, quantity: 1 }],
-            }));
+            newItems = [...currentItems, { ...item, quantity: 1 }];
           }
+
+          set({
+            items: newItems,
+            totalItems: calculateTotalItems(newItems),
+            totalPrice: calculateTotalPrice(newItems),
+          });
         },
         removeItem: (itemId) => {
-          set((state) => ({ items: state.items.filter((i) => i.id !== itemId) }));
+          const currentItems = get().items;
+          const newItems = currentItems.filter((i) => i.id !== itemId);
+          
+          set({
+            items: newItems,
+            totalItems: calculateTotalItems(newItems),
+            totalPrice: calculateTotalPrice(newItems),
+          });
         },
         updateItemQuantity: async (itemId, quantity) => {
+          const currentItems = get().items;
+          let newItems: CartItem[];
+
           if (quantity < 1) {
-            get().removeItem(itemId);
-            return true;
-          }
-          set((state) => ({
-            items: state.items.map((i) =>
+            newItems = currentItems.filter((i) => i.id !== itemId);
+          } else {
+            newItems = currentItems.map((i) =>
               i.id === itemId ? { ...i, quantity } : i
-            ),
-          }));
+            );
+          }
+
+          set({
+            items: newItems,
+            totalItems: calculateTotalItems(newItems),
+            totalPrice: calculateTotalPrice(newItems),
+          });
           return true;
         },
-        clearCart: () => set({ items: [] }),
+        clearCart: () => {
+          set({
+            items: [],
+            totalItems: 0,
+            totalPrice: 0,
+          });
+        },
         get totalItems() {
-          return get().items.reduce((count, item) => count + item.quantity, 0);
+          return calculateTotalItems(get().items);
         },
         get totalPrice() {
-          return get().items.reduce((total, item) => total + item.price * item.quantity, 0);
+          return calculateTotalPrice(get().items);
         },
-      })
+      }),
+      { name: 'cart-store' }
     ),
     {
       name: 'cart-storage',

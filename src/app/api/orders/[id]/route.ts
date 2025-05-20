@@ -9,10 +9,8 @@ const updateOrderSchema = z.object({
   notes: z.string().optional(),
 });
 
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const body = await request.json();
     const validatedData = updateOrderSchema.parse(body);
@@ -98,10 +96,8 @@ export async function PUT(
   }
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const order = await prisma.order.findUnique({
       where: { id: params.id },

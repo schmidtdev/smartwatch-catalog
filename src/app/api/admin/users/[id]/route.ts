@@ -8,10 +8,8 @@ const updateUserSchema = z.object({
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres').optional(),
 });
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const userId = params.id;
 
@@ -35,65 +33,63 @@ export async function DELETE(
   }
 }
 
-export async function PUT(
-    request: Request,
-    { params }: { params: { id: string } }
-  ) {
-    try {
-      const body = await request.json();
-      const validatedData = updateUserSchema.parse(body);
+export async function PUT(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  try {
+    const body = await request.json();
+    const validatedData = updateUserSchema.parse(body);
 
-      const userId = params.id;
+    const userId = params.id;
 
-      const existingUser = await prisma.adminUser.findUnique({
-          where: { id: userId }
-      });
+    const existingUser = await prisma.adminUser.findUnique({
+        where: { id: userId }
+    });
 
-      if (!existingUser) {
-          return NextResponse.json({ message: 'Usuário não encontrado' }, { status: 404 });
-      }
+    if (!existingUser) {
+        return NextResponse.json({ message: 'Usuário não encontrado' }, { status: 404 });
+    }
 
-      // Verificar se o email já existe para outro usuário (se o email estiver sendo atualizado)
-      if (validatedData.email && validatedData.email !== existingUser.email) {
-          const emailExists = await prisma.adminUser.findUnique({
-              where: { email: validatedData.email }
-          });
-          if (emailExists) {
-              return NextResponse.json({ message: 'Email já cadastrado' }, { status: 400 });
-          }
-      }
+    // Verificar se o email já existe para outro usuário (se o email estiver sendo atualizado)
+    if (validatedData.email && validatedData.email !== existingUser.email) {
+        const emailExists = await prisma.adminUser.findUnique({
+            where: { email: validatedData.email }
+        });
+        if (emailExists) {
+            return NextResponse.json({ message: 'Email já cadastrado' }, { status: 400 });
+        }
+    }
 
-      let hashedPassword = existingUser.password; // Manter a senha existente por padrão
-      if (validatedData.password) {
-          // Hashear a nova senha se fornecida
-          hashedPassword = await hash(validatedData.password, 10);
-      }
+    let hashedPassword = existingUser.password; // Manter a senha existente por padrão
+    if (validatedData.password) {
+        // Hashear a nova senha se fornecida
+        hashedPassword = await hash(validatedData.password, 10);
+    }
 
-      const updatedUser = await prisma.adminUser.update({
-        where: { id: userId },
-        data: {
-          email: validatedData.email || existingUser.email, // Usar o novo email se fornecido, caso contrário, manter o existente
-          password: hashedPassword,
-        },
-        select: { // Não retornar a senha hasheada na resposta
-          id: true,
-          email: true,
-          createdAt: true,
-        },
-      });
+    const updatedUser = await prisma.adminUser.update({
+      where: { id: userId },
+      data: {
+        email: validatedData.email || existingUser.email, // Usar o novo email se fornecido, caso contrário, manter o existente
+        password: hashedPassword,
+      },
+      select: { // Não retornar a senha hasheada na resposta
+        id: true,
+        email: true,
+        createdAt: true,
+      },
+    });
 
-      return NextResponse.json(updatedUser);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return NextResponse.json(
-          { message: 'Dados inválidos', errors: error.errors },
-          { status: 400 }
-        );
-      }
-      console.error('Error updating admin user:', error);
+    return NextResponse.json(updatedUser);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { message: 'Erro ao atualizar usuário admin' },
-        { status: 500 }
+        { message: 'Dados inválidos', errors: error.errors },
+        { status: 400 }
       );
     }
-  } 
+    console.error('Error updating admin user:', error);
+    return NextResponse.json(
+      { message: 'Erro ao atualizar usuário admin' },
+      { status: 500 }
+    );
+  }
+} 

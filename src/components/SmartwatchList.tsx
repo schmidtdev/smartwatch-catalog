@@ -30,7 +30,7 @@ export default function SmartwatchList({ smartwatches, onAddToCart }: Smartwatch
       {smartwatches.map((smartwatch) => (
         <div
           key={smartwatch.id}
-          className="group relative bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+          className="group relative bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow p-4"
         >
           <div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-t-lg bg-gray-200">
             <img
@@ -42,7 +42,8 @@ export default function SmartwatchList({ smartwatches, onAddToCart }: Smartwatch
               }}
             />
           </div>
-          <div className="p-4">
+          
+          <div className="mt-4">
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="text-sm font-medium text-gray-900">
@@ -71,6 +72,7 @@ export default function SmartwatchList({ smartwatches, onAddToCart }: Smartwatch
                 ))}
               </ul>
             </div>
+            
             <div className="mt-4">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm text-gray-500">
